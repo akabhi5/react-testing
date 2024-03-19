@@ -4,6 +4,7 @@ import { render, screen } from "@testing-library/react";
 import AllProviders from "../AllProviders";
 import { Category, Product } from "../../src/entities";
 import { db } from "../mocks/db";
+import userEvent from "@testing-library/user-event";
 
 describe("ProductForm", () => {
   let category: Category;
@@ -22,23 +23,22 @@ describe("ProductForm", () => {
     });
 
     return {
-      waitForFormToLoad: () => screen.findByRole("form"),
-      getInputs: () => {
+      waitForFormToLoad: async () => {
+        await screen.findByRole("form");
         return {
           nameInput: screen.getByPlaceholderText(/name/i),
           priceInput: screen.getByPlaceholderText(/price/i),
           categoryInput: screen.getByRole("combobox", { name: /category/i }),
+          submitButton: screen.getByRole("button"),
         };
       },
     };
   };
 
   it("should render form fields", async () => {
-    const { waitForFormToLoad, getInputs } = renderComponent();
+    const { waitForFormToLoad } = renderComponent();
 
-    await waitForFormToLoad();
-
-    const { nameInput, priceInput, categoryInput } = getInputs();
+    const { nameInput, priceInput, categoryInput } = await waitForFormToLoad();
 
     expect(nameInput).toBeInTheDocument();
     expect(priceInput).toBeInTheDocument();
@@ -53,13 +53,49 @@ describe("ProductForm", () => {
       categoryId: category.id,
     };
 
-    const { waitForFormToLoad, getInputs } = renderComponent(product);
+    const { waitForFormToLoad } = renderComponent(product);
 
-    await waitForFormToLoad();
-    const inputs = getInputs();
+    const inputs = await waitForFormToLoad();
 
     expect(inputs.nameInput).toHaveValue(product.name);
     expect(inputs.priceInput).toHaveValue(product.price.toString());
     expect(inputs.categoryInput).toHaveTextContent(category.name);
   });
+
+  it("should put focus on the name field", async () => {
+    const { waitForFormToLoad } = renderComponent();
+
+    const { nameInput } = await waitForFormToLoad();
+    expect(nameInput).toHaveFocus();
+  });
+
+  it.each([
+    {
+      scenario: "missing",
+      errorMessage: /required/i,
+    },
+    {
+      scenario: "longer than 255 chars",
+      name: "a".repeat(256),
+      errorMessage: /255/,
+    },
+  ])(
+    "should display an error if name is $scenario",
+    async ({ name, errorMessage }) => {
+      const { waitForFormToLoad } = renderComponent();
+
+      const form = await waitForFormToLoad();
+      const user = userEvent.setup();
+      if (name !== undefined) await user.type(form.nameInput, name);
+      await user.type(form.priceInput, "10");
+      await user.click(form.categoryInput);
+      const options = screen.getAllByRole("option");
+      await user.click(options[0]);
+      await user.click(form.submitButton);
+
+      const error = screen.getByRole("alert");
+      expect(error).toBeInTheDocument();
+      expect(error).toHaveTextContent(errorMessage);
+    }
+  );
 });
