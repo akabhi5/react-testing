@@ -1,15 +1,14 @@
-import { it, expect, describe } from "vitest";
 import {
   render,
   screen,
   waitForElementToBeRemoved,
 } from "@testing-library/react";
-import { Theme } from "@radix-ui/themes";
-import BrowseProducts from "../../src/pages/BrowseProductsPage";
 import userEvent from "@testing-library/user-event";
+import { describe, expect, it } from "vitest";
 import { Category, Product } from "../../src/entities";
+import BrowseProducts from "../../src/pages/BrowseProductsPage";
+import AllProviders from "../AllProviders";
 import { db, getProductsByCategory } from "../mocks/db";
-import { CartProvider } from "../../src/providers/CartProvider";
 import { simulateDelay, simulateError } from "../utils";
 
 describe("BrowseProductsPage", () => {
@@ -135,13 +134,7 @@ describe("BrowseProductsPage", () => {
 });
 
 const renderComponent = () => {
-  render(
-    <CartProvider>
-      <Theme>
-        <BrowseProducts />
-      </Theme>
-    </CartProvider>
-  );
+  render(<BrowseProducts />, { wrapper: AllProviders });
 
   const getCategoriesSkeleton = () =>
     screen.queryByRole("progressbar", { name: /categories/i });
