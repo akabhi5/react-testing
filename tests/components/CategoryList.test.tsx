@@ -8,7 +8,6 @@ import { Category } from "../../src/entities";
 import AllProviders from "../AllProviders";
 import { db } from "../mocks/db";
 import { simulateDelay, simulateError } from "../utils";
-import ReduxProvider from "../../src/providers/ReduxProvider";
 
 describe("CategoryList", () => {
   const categories: Category[] = [];
@@ -30,13 +29,7 @@ describe("CategoryList", () => {
   });
 
   const renderComponent = () => {
-    render(
-      <ReduxProvider>
-        <CategoryList />
-      </ReduxProvider>,
-
-      { wrapper: AllProviders }
-    );
+    render(<CategoryList />, { wrapper: AllProviders });
   };
 
   it("should render a list of categories", async () => {
